@@ -466,16 +466,10 @@
         doc.setFont("helvetica", "bold");
         doc.text(`${branch}`, 28, 32);
 
+        // Date generated on header
         doc.setFont("helvetica", "normal");
         doc.setTextColor(100, 116, 139);
-        doc.text(`Total Transactions:`, 14, 38);
-        doc.setTextColor(15, 23, 42);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${records.length}`, 48, 38);
-
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(100, 116, 139);
-        doc.text(`Generated on: ${formatDate(new Date())}`, 14, 44);
+        doc.text(`Generated on: ${formatDate(new Date())}`, 14, 38);
 
         const tableColumn = ["Date", "SO Number", "Customer Name", "Payment Status", "Processed By"];
         const tableRows = [];
@@ -492,7 +486,7 @@
 
         // Draw Table and add "Made by Gelo" footer on the PDF
         doc.autoTable({
-            startY: 50,
+            startY: 45,
             head: [tableColumn],
             body: tableRows,
             theme: 'grid',
@@ -506,12 +500,12 @@
                 4: { cellWidth: 35 }
             },
             alternateRowStyles: { fillColor: [248, 250, 252] },
-            margin: { top: 50, bottom: 20 },
-            // ITO YUNG DAGDAG PARA SA PDF FOOTER
+            margin: { top: 45, bottom: 20 },
             didDrawPage: function (data) {
                 // Page Number sa kaliwa
                 doc.setFontSize(9);
                 doc.setTextColor(150, 150, 150);
+                doc.setFont("helvetica", "normal");
                 doc.text(
                     "Page " + doc.internal.getNumberOfPages(),
                     data.settings.margin.left,
@@ -527,6 +521,27 @@
             }
         });
 
+        // --- DAGDAG: TEXT SA ILALIM NG TABLE ---
+        let finalY = doc.lastAutoTable.finalY; // Kinukuha ang pinakahuling Y position kung saan natapos ang table
+
+        // Kung walang sapat na space sa ilalim (overflow), gawa muna ng bagong page bago i-print ang notes
+        if (finalY > doc.internal.pageSize.height - 30) {
+            doc.addPage();
+            finalY = 20; // reset paitaas para sa bagong page
+        }
+
+        // Print: Total of Transaction
+        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42); // Dark color
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total of Transaction = ${records.length}`, 14, finalY + 12);
+
+        // Print: NOTES
+        doc.text(`NOTES:`, 14, finalY + 20);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Direct patients should have Official Receipt or Collection Receipt attached on Sales Invoice`, 30, finalY + 20);
+
+        // Save PDF
         doc.save(`IPER_${branch}_Report.pdf`);
         showToast(`📄 PDF Exported for ${branch}`);
     }
