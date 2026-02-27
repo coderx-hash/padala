@@ -34,6 +34,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
         }
 
         /* --- NAVBAR --- */
@@ -77,6 +78,7 @@
             max-width: 1200px;
             padding: 25px 20px;
             box-sizing: border-box;
+            flex-grow: 1;
         }
 
         @media (min-width: 850px) {
@@ -93,7 +95,7 @@
         }
 
         .form-card { flex: 1; position: sticky; top: 90px; }
-        .summary-card { flex: 1.8; max-height: 85vh; display: flex; flex-direction: column; }
+        .summary-card { flex: 1.8; max-height: 80vh; display: flex; flex-direction: column; }
 
         .header-flex {
             display: flex;
@@ -215,6 +217,17 @@
         .empty-state { text-align: center; color: var(--text-muted); margin-top: 60px; padding: 20px;}
         .empty-icon { font-size: 3rem; margin-bottom: 10px; opacity: 0.5;}
 
+        /* --- FOOTER (MADE BY GELO) --- */
+        .app-footer {
+            width: 100%;
+            text-align: center;
+            padding: 20px 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: auto;
+        }
+        .app-footer span { font-weight: 600; color: var(--primary); }
+
         /* --- TOAST NOTIFICATION --- */
         #toast {
             visibility: hidden;
@@ -235,11 +248,7 @@
             transition: opacity 0.3s, transform 0.3s;
         }
 
-        #toast.show {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0);
-        }
+        #toast.show { visibility: visible; opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body>
@@ -299,6 +308,10 @@
 
 </div>
 
+<div class="app-footer">
+    Crafted with 💡 by <span>Gelo</span>
+</div>
+
 <div id="toast">Message here</div>
 
 <script>
@@ -335,13 +348,12 @@
         };
 
         if (!database[data.branch]) { database[data.branch] = []; }
-        database[data.branch].unshift(data); // Unshift para nasa taas ang pinakabago
+        database[data.branch].unshift(data);
 
         saveData();
         renderSummary();
         showToast("✅ Transaction Added Successfully!");
         
-        // Reset fields but keep date and processor to speed up entry
         document.getElementById('name').value = '';
         document.getElementById('so_number').value = '';
         document.getElementById('name').focus();
@@ -351,7 +363,7 @@
     function renderSummary() {
         const container = document.getElementById('summaryContainer');
         container.innerHTML = '';
-        const branches = Object.keys(database).sort(); // Sort branches alphabetically
+        const branches = Object.keys(database).sort();
 
         if (branches.length === 0) {
             container.innerHTML = `
@@ -443,7 +455,7 @@
         // PDF Header Design
         doc.setFont("helvetica", "bold");
         doc.setFontSize(18);
-        doc.setTextColor(37, 99, 235); // Blue primary color
+        doc.setTextColor(37, 99, 235);
         doc.text(`IPER DELIVERY REPORT`, 14, 22);
         
         doc.setFont("helvetica", "normal");
@@ -465,7 +477,6 @@
         doc.setTextColor(100, 116, 139);
         doc.text(`Generated on: ${formatDate(new Date())}`, 14, 44);
 
-        // PDF Table Setup
         const tableColumn = ["Date", "SO Number", "Customer Name", "Payment Status", "Processed By"];
         const tableRows = [];
 
@@ -479,7 +490,7 @@
             ]);
         });
 
-        // Draw Table
+        // Draw Table and add "Made by Gelo" footer on the PDF
         doc.autoTable({
             startY: 50,
             head: [tableColumn],
@@ -488,14 +499,32 @@
             headStyles: { fillColor: [37, 99, 235], fontSize: 10, halign: 'center' },
             bodyStyles: { fontSize: 9 },
             columnStyles: {
-                0: { cellWidth: 25 }, // Date
-                1: { cellWidth: 25 }, // SO
-                2: { cellWidth: 'auto' }, // Name
-                3: { cellWidth: 40 }, // Status
-                4: { cellWidth: 35 }  // Processor
+                0: { cellWidth: 25 },
+                1: { cellWidth: 25 },
+                2: { cellWidth: 'auto' },
+                3: { cellWidth: 40 },
+                4: { cellWidth: 35 }
             },
             alternateRowStyles: { fillColor: [248, 250, 252] },
-            margin: { top: 50 }
+            margin: { top: 50, bottom: 20 },
+            // ITO YUNG DAGDAG PARA SA PDF FOOTER
+            didDrawPage: function (data) {
+                // Page Number sa kaliwa
+                doc.setFontSize(9);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                    "Page " + doc.internal.getNumberOfPages(),
+                    data.settings.margin.left,
+                    doc.internal.pageSize.height - 10
+                );
+                // "System Made by Gelo" sa kanan
+                doc.text(
+                    "System Made by Gelo",
+                    doc.internal.pageSize.width - data.settings.margin.right,
+                    doc.internal.pageSize.height - 10,
+                    { align: 'right' }
+                );
+            }
         });
 
         doc.save(`IPER_${branch}_Report.pdf`);
