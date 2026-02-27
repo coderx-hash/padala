@@ -484,7 +484,7 @@
             ]);
         });
 
-        // Draw Table and add "Made by Gelo" footer on the PDF
+        // Draw Table and add custom styling and "Made by Gelo" footer on the PDF
         doc.autoTable({
             startY: 45,
             head: [tableColumn],
@@ -501,6 +501,21 @@
             },
             alternateRowStyles: { fillColor: [248, 250, 252] },
             margin: { top: 45, bottom: 20 },
+            
+            // ITO YUNG LOGIC PARA MAGKULAY ANG TEXT SA PAYMENT STATUS COLUMN
+            didParseCell: function(data) {
+                // Column index 3 ay ang 'Payment Status'
+                if (data.section === 'body' && data.column.index === 3) {
+                    if (data.cell.raw === 'With Excess Payment') {
+                        data.cell.styles.textColor = [239, 68, 68]; // Pula (Red)
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (data.cell.raw === 'No Excess Payment') {
+                        data.cell.styles.textColor = [37, 99, 235]; // Asul (Blue)
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            },
+
             didDrawPage: function (data) {
                 // Page Number sa kaliwa
                 doc.setFontSize(9);
@@ -521,8 +536,8 @@
             }
         });
 
-        // --- DAGDAG: TEXT SA ILALIM NG TABLE ---
-        let finalY = doc.lastAutoTable.finalY; // Kinukuha ang pinakahuling Y position kung saan natapos ang table
+        // --- TEXT SA ILALIM NG TABLE ---
+        let finalY = doc.lastAutoTable.finalY;
 
         // Kung walang sapat na space sa ilalim (overflow), gawa muna ng bagong page bago i-print ang notes
         if (finalY > doc.internal.pageSize.height - 30) {
