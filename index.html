@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPER Branch Delivery Manager</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #10b981;
+            --success-hover: #059669;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            width: 100%;
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+
+        .nav-content {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-content h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- MAIN CONTAINER --- */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 100%;
+            max-width: 1200px;
+            padding: 25px 20px;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 850px) {
+            .app-container { flex-direction: row; align-items: flex-start; }
+        }
+
+        /* --- CARDS --- */
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border-color);
+        }
+
+        .form-card { flex: 1; position: sticky; top: 90px; }
+        .summary-card { flex: 1.8; max-height: 85vh; display: flex; flex-direction: column; }
+
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        h2 { margin: 0; color: var(--text-main); font-size: 1.15rem; font-weight: 600; }
+
+        /* --- FORM ELEMENTS --- */
+        .form-group { margin-bottom: 18px; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus { 
+            background-color: #ffffff;
+            border-color: var(--primary); 
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); 
+        }
+
+        /* --- BUTTONS --- */
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-submit { width: 100%; background: var(--primary); color: white; padding: 14px; margin-top: 5px; font-size: 1rem;}
+        .btn-submit:hover { background: var(--primary-hover); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+
+        .btn-clear-all { background: #fee2e2; color: var(--danger); font-size: 0.8rem; padding: 8px 12px; }
+        .btn-clear-all:hover { background: #fca5a5; color: #991b1b; }
+
+        .btn-delete { background: #fef2f2; color: var(--danger); padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; border: 1px solid #fca5a5; }
+        .btn-delete:hover { background: var(--danger); color: white; }
+
+        .btn-export { background: var(--success); color: white; padding: 8px 14px; border-radius: 6px; font-size: 0.8rem; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2); }
+        .btn-export:hover { background: var(--success-hover); }
+
+        /* --- SUMMARY SECTION --- */
+        .scroll-area { overflow-y: auto; padding-right: 8px; flex-grow: 1; }
+        .scroll-area::-webkit-scrollbar { width: 6px; }
+        .scroll-area::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .scroll-area::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .branch-item { margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+
+        .branch-header {
+            background: #f8fafc;
+            padding: 15px 18px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: var(--text-main);
+            transition: background 0.2s;
+            border-left: 4px solid var(--primary);
+        }
+
+        .branch-header:hover { background: #f1f5f9; }
+        
+        .branch-header-left { display: flex; align-items: center; gap: 12px; }
+        .trans-count { font-size: 0.75rem; background: #e2e8f0; padding: 4px 10px; border-radius: 20px; color: #475569; font-weight: 700;}
+
+        .branch-content { display: none; padding: 15px; background: #ffffff; border-top: 1px solid var(--border-color); }
+
+        .record-box {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color 0.2s;
+        }
+
+        .record-box:hover { border-color: #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+
+        .record-details { flex: 1; }
+        .record-actions { margin-left: 15px; text-align: right; }
+
+        .record-title { font-weight: 700; color: var(--text-main); font-size: 1rem; margin-bottom: 6px; }
+        .record-meta { color: var(--text-muted); margin-bottom: 8px; font-size: 0.8rem; display: flex; gap: 10px; flex-wrap: wrap;}
+        .meta-item { background: #f1f5f9; padding: 3px 8px; border-radius: 4px; }
+
+        .badge { font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; color: white; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .green { background: var(--success); }
+        .red { background: var(--danger); }
+
+        .empty-state { text-align: center; color: var(--text-muted); margin-top: 60px; padding: 20px;}
+        .empty-icon { font-size: 3rem; margin-bottom: 10px; opacity: 0.5;}
+
+        /* --- TOAST NOTIFICATION --- */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px 20px;
+            position: fixed;
+            z-index: 1000;
+            bottom: 30px;
+            right: 30px;
+            font-size: 0.9rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-content">
+        <h1>🚚 IPER Delivery Manager</h1>
+    </div>
+</nav>
+
+<div class="app-container">
+    
+    <div class="card form-card">
+        <div class="header-flex">
+            <h2>📦 New Transaction</h2>
+        </div>
+        <form id="deliveryForm">
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="date" required>
+            </div>
+            <div class="form-group">
+                <label>Customer Name</label>
+                <input type="text" id="name" placeholder="Juan Dela Cruz" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Branch</label>
+                <input type="text" id="branch" placeholder="e.g. MAKATI" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Processed By</label>
+                <input type="text" id="processor" placeholder="Staff Name" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>SO #</label>
+                <input type="text" id="so_number" placeholder="Order Number" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Payment Type</label>
+                <select id="payment_status" required>
+                    <option value="With Excess Payment">With Excess Payment</option>
+                    <option value="No Excess Payment">No Excess Payment</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-submit">➕ Add to Logs</button>
+        </form>
+    </div>
+
+    <div class="card summary-card">
+        <div class="header-flex">
+            <h2>📋 Delivery Logs</h2>
+            <button class="btn btn-clear-all" onclick="clearAllRecords()">🗑️ Clear Data</button>
+        </div>
+        <div class="scroll-area" id="summaryContainer">
+            </div>
+    </div>
+
+</div>
+
+<div id="toast">Message here</div>
+
+<script>
+    let database = JSON.parse(localStorage.getItem('iper_db')) || {};
+    document.getElementById('date').valueAsDate = new Date();
+    renderSummary();
+
+    // --- HELPER: FORMAT DATE ---
+    function formatDate(dateString) {
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        return new Date(dateString).toLocaleDateString('en-US', options);
+    }
+
+    // --- HELPER: TOAST NOTIFICATION ---
+    function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.innerText = message;
+        toast.className = "show";
+        setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+    }
+
+    // --- FORM SUBMISSION ---
+    document.getElementById('deliveryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const data = {
+            id: Date.now().toString(),
+            date: document.getElementById('date').value,
+            name: document.getElementById('name').value.trim(),
+            branch: document.getElementById('branch').value.trim().toUpperCase(),
+            processor: document.getElementById('processor').value.trim(),
+            so: document.getElementById('so_number').value.trim(),
+            status: document.getElementById('payment_status').value
+        };
+
+        if (!database[data.branch]) { database[data.branch] = []; }
+        database[data.branch].unshift(data); // Unshift para nasa taas ang pinakabago
+
+        saveData();
+        renderSummary();
+        showToast("✅ Transaction Added Successfully!");
+        
+        // Reset fields but keep date and processor to speed up entry
+        document.getElementById('name').value = '';
+        document.getElementById('so_number').value = '';
+        document.getElementById('name').focus();
+    });
+
+    // --- RENDER UI ---
+    function renderSummary() {
+        const container = document.getElementById('summaryContainer');
+        container.innerHTML = '';
+        const branches = Object.keys(database).sort(); // Sort branches alphabetically
+
+        if (branches.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <h3>No Records Found</h3>
+                    <p>Enter a transaction on the left to get started.</p>
+                </div>`;
+            return;
+        }
+
+        for (const branch of branches) {
+            const group = database[branch];
+            if (group.length === 0) continue;
+
+            const branchDiv = document.createElement('div');
+            branchDiv.className = 'branch-item';
+
+            branchDiv.innerHTML = `
+                <div class="branch-header" onclick="toggleBranch(this)">
+                    <div class="branch-header-left">
+                        <span>🏢 ${branch}</span>
+                        <span class="trans-count">${group.length} Items</span>
+                    </div>
+                    <button class="btn btn-export" onclick="exportBranchToPDF('${branch}', event)">📄 Export PDF</button>
+                </div>
+                <div class="branch-content" style="display: block;">
+                    ${group.map(item => `
+                        <div class="record-box">
+                            <div class="record-details">
+                                <div class="record-title">${item.name}</div>
+                                <div class="record-meta">
+                                    <span class="meta-item">SO: <strong>${item.so}</strong></span>
+                                    <span class="meta-item">By: ${item.processor}</span>
+                                    <span class="meta-item">📅 ${formatDate(item.date)}</span>
+                                </div>
+                                <span class="badge ${item.status.includes('With') ? 'green' : 'red'}">${item.status}</span>
+                            </div>
+                            <div class="record-actions">
+                                <button class="btn btn-delete" onclick="deleteRecord('${branch}', '${item.id}', event)">✖ Delete</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(branchDiv);
+        }
+    }
+
+    // --- SAVE / DELETE / CLEAR ---
+    function saveData() { localStorage.setItem('iper_db', JSON.stringify(database)); }
+
+    function deleteRecord(branch, id, event) {
+        event.stopPropagation(); 
+        if (confirm("Are you sure you want to delete this specific record?")) {
+            database[branch] = database[branch].filter(item => item.id !== id);
+            if (database[branch].length === 0) { delete database[branch]; }
+            saveData();
+            renderSummary();
+            showToast("🗑️ Record Deleted");
+        }
+    }
+
+    function clearAllRecords() {
+        if (Object.keys(database).length === 0) return alert("Database is already empty.");
+        if (confirm("⚠ DANGER: Are you sure you want to wipe all records? This action cannot be undone.")) {
+            database = {};
+            localStorage.removeItem('iper_db');
+            renderSummary();
+            showToast("🧹 All records cleared!");
+        }
+    }
+
+    function toggleBranch(element) {
+        const content = element.nextElementSibling;
+        content.style.display = (content.style.display === "none" || content.style.display === "") ? "block" : "none";
+    }
+
+    // --- EXPORT TO PDF FUNCTION ---
+    function exportBranchToPDF(branch, event) {
+        event.stopPropagation();
+        
+        const records = database[branch];
+        if (!records || records.length === 0) return;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // PDF Header Design
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(37, 99, 235); // Blue primary color
+        doc.text(`IPER DELIVERY REPORT`, 14, 22);
+        
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Branch:`, 14, 32);
+        doc.setTextColor(15, 23, 42);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${branch}`, 28, 32);
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Total Transactions:`, 14, 38);
+        doc.setTextColor(15, 23, 42);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${records.length}`, 48, 38);
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Generated on: ${formatDate(new Date())}`, 14, 44);
+
+        // PDF Table Setup
+        const tableColumn = ["Date", "SO Number", "Customer Name", "Payment Status", "Processed By"];
+        const tableRows = [];
+
+        records.forEach(item => {
+            tableRows.push([
+                formatDate(item.date),
+                item.so,
+                item.name,
+                item.status,
+                item.processor
+            ]);
+        });
+
+        // Draw Table
+        doc.autoTable({
+            startY: 50,
+            head: [tableColumn],
+            body: tableRows,
+            theme: 'grid',
+            headStyles: { fillColor: [37, 99, 235], fontSize: 10, halign: 'center' },
+            bodyStyles: { fontSize: 9 },
+            columnStyles: {
+                0: { cellWidth: 25 }, // Date
+                1: { cellWidth: 25 }, // SO
+                2: { cellWidth: 'auto' }, // Name
+                3: { cellWidth: 40 }, // Status
+                4: { cellWidth: 35 }  // Processor
+            },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            margin: { top: 50 }
+        });
+
+        doc.save(`IPER_${branch}_Report.pdf`);
+        showToast(`📄 PDF Exported for ${branch}`);
+    }
+</script>
+
+</body>
+</html>
